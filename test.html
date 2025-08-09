@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Supabase Login Example</title>
+</head>
+<body>
+  <!-- Login Form -->
+  <div id="login-section">
+    <h2>Login</h2>
+    <form id="loginForm">
+      <input type="email" id="email" placeholder="Email" required><br><br>
+      <input type="password" id="password" placeholder="Password" required><br><br>
+      <button type="submit">Login</button>
+    </form>
+  </div>
+
+  <!-- Dashboard (hidden by default) -->
+  <div id="dashboard-section" style="display:none;">
+    <h2 id="welcome"></h2>
+    <button id="logoutBtn">Logout</button>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+    const supabaseUrl = 'https://YOUR_PROJECT.supabase.co'
+    const supabaseKey = 'YOUR_PUBLIC_ANON_KEY'
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
+    const loginSection = document.getElementById('login-section')
+    const dashboardSection = document.getElementById('dashboard-section')
+    const welcomeMsg = document.getElementById('welcome')
+
+    // Check session on page load
+    checkSession()
+
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        showDashboard(session.user)
+      } else {
+        showLogin()
+      }
+    }
+
+    // Handle login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const email = document.getElementById('email').value
+      const password = document.getElementById('password').value
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        alert(error.message)
+      } else {
+        showDashboard(data.user)
+      }
+    })
+
+    // Show dashboard
+    function showDashboard(user) {
+      welcomeMsg.textContent = `Welcome, ${user.email}`
+      loginSection.style.display = 'none'
+      dashboardSection.style.display = 'block'
+    }
+
+    // Show login form
+    function showLogin() {
+      loginSection.style.display = 'block'
+      dashboardSection.style.display = 'none'
+    }
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut()
+      showLogin()
+    })
+  </script>
+</body>
+</html>

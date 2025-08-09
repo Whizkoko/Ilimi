@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teacher Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-blue-900 text-white flex justify-between items-center px-4 py-3">
+    <div class="text-xl font-bold">Ilimi International School</div>
+    <div class="flex items-center gap-4">
+      <!-- Notifications -->
+      <div class="relative">
+        <button id="notifBtn" class="relative">
+          🔔
+          <span class="absolute -top-2 -right-2 bg-red-500 text-xs rounded-full px-1">3</span>
+        </button>
+        <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white shadow-lg rounded-lg overflow-hidden">
+          <ul>
+            <li class="flex justify-between items-center px-3 py-2 border-b">
+              <span>New timetable uploaded</span>
+              <button class="text-red-500">❌</button>
+            </li>
+            <li class="flex justify-between items-center px-3 py-2 border-b">
+              <span>Staff meeting tomorrow</span>
+              <button class="text-red-500">❌</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- Change user/pass -->
+      <button class="bg-yellow-500 text-black px-3 py-1 rounded">Change Login</button>
+      <!-- Logout -->
+      <button class="bg-red-500 px-3 py-1 rounded">Logout</button>
+    </div>
+  </header>
+
+  <!-- Stats Section -->
+  <section class="grid grid-cols-3 gap-4 p-4">
+    <div class="bg-white shadow p-4 rounded">
+      <div class="text-sm text-gray-500">Subjects</div>
+      <div class="text-3xl font-bold">5</div>
+    </div>
+    <div class="bg-white shadow p-4 rounded">
+      <div class="text-sm text-gray-500">Classes</div>
+      <div class="text-3xl font-bold">3</div>
+    </div>
+    <div class="bg-white shadow p-4 rounded">
+      <div class="text-sm text-gray-500">Students</div>
+      <div class="text-3xl font-bold">120</div>
+    </div>
+  </section>
+
+  <!-- Form Master Section -->
+  <section id="formMasterSection" class="p-4">
+    <div class="bg-white shadow rounded p-4">
+      <button id="toggleFormMaster" class="w-full flex justify-between items-center">
+        <span class="font-bold">You're the form master for: SS1A1</span>
+        <span>▼</span>
+      </button>
+      <div id="formMasterContent" class="hidden mt-4">
+        <ul>
+          <li class="flex justify-between items-center border-b py-2">
+            <span>John Doe</span>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+              <button class="bg-blue-500 text-white px-2 py-1 rounded">View</button>
+            </div>
+          </li>
+          <li class="flex justify-between items-center border-b py-2">
+            <span>Jane Smith</span>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+              <button class="bg-blue-500 text-white px-2 py-1 rounded">View</button>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Subjects Buttons -->
+  <section class="p-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+    <button class="bg-white shadow p-4 rounded text-center">Mathematics, SS1A1</button>
+    <button class="bg-white shadow p-4 rounded text-center">English, SS1A1</button>
+    <button class="bg-white shadow p-4 rounded text-center">Physics, SS2B</button>
+  </section>
+
+  <!-- Score Sheet Table Placeholder -->
+  <section class="p-4 hidden" id="scoreSheetSection">
+    <div class="bg-white shadow rounded p-4 overflow-x-auto">
+      <table class="min-w-full border">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="px-2 py-1 border">Student Name</th>
+            <th class="px-2 py-1 border">1st CA</th>
+            <th class="px-2 py-1 border">2nd CA</th>
+            <th class="px-2 py-1 border">3rd CA</th>
+            <th class="px-2 py-1 border">Total CA</th>
+            <th class="px-2 py-1 border">Exam</th>
+            <th class="px-2 py-1 border">Total</th>
+            <th class="px-2 py-1 border">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="border px-2 py-1">John Doe</td>
+            <td class="border px-2 py-1"><input type="number" max="10" class="w-16 border rounded"/></td>
+            <td class="border px-2 py-1"><input type="number" max="10" class="w-16 border rounded"/></td>
+            <td class="border px-2 py-1"><input type="number" max="10" class="w-16 border rounded"/></td>
+            <td class="border px-2 py-1 bg-gray-100">—</td>
+            <td class="border px-2 py-1"><input type="number" max="70" class="w-16 border rounded"/></td>
+            <td class="border px-2 py-1 bg-gray-100">—</td>
+            <td class="border px-2 py-1"><button class="bg-gray-500 text-white px-2 py-1 rounded">Not Offering</button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="mt-4 text-right">
+        <button class="bg-green-600 text-white px-4 py-2 rounded">Save All</button>
+      </div>
+    </div>
+  </section>
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+
+  // Replace with your Supabase details
+  const supabaseUrl = 'https://YOUR-PROJECT.supabase.co'
+  const supabaseKey = 'YOUR-ANON-KEY'
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  // Assume teacher is logged in & we have teacher_id from auth/session
+  const teacherId = 1 // Replace with actual session data
+
+  // DOM refs
+  const statsSection = document.querySelectorAll('.grid.grid-cols-3 div .text-3xl')
+  const formMasterSection = document.getElementById('formMasterSection')
+  const formMasterList = document.querySelector('#formMasterContent ul')
+  const subjectsGrid = document.querySelector('section.grid.grid-cols-2')
+
+  // Load dashboard data
+  async function loadDashboard() {
+    // Fetch subjects teacher handles
+    const { data: subjects, error: subErr } = await supabase
+      .from('subjects')
+      .select('id, name, class_id, classes(name)')
+      .eq('teacher_id', teacherId)
+
+    if (subErr) return console.error(subErr)
+
+    // Count stats
+    const subjectCount = subjects.length
+    const classCount = new Set(subjects.map(s => s.class_id)).size
+
+    const { count: studentCount, error: stuErr } = await supabase
+      .from('students')
+      .select('*', { count: 'exact', head: true })
+      .in('class_id', subjects.map(s => s.class_id))
+
+    if (stuErr) return console.error(stuErr)
+
+    statsSection[0].textContent = subjectCount
+    statsSection[1].textContent = classCount
+    statsSection[2].textContent = studentCount
+
+    // Form master role check
+    const { data: formClass, error: formErr } = await supabase
+      .from('classes')
+      .select('id, name')
+      .eq('form_master_id', teacherId)
+      .single()
+
+    if (!formErr && formClass) {
+      document.querySelector('#formMasterSection span.font-bold').textContent =
+        `You're the form master for: ${formClass.name}`
+
+      const { data: students, error: stuListErr } = await supabase
+        .from('students')
+        .select('id, name, status')
+        .eq('class_id', formClass.id)
+
+      if (!stuListErr) {
+        formMasterList.innerHTML = students.map(stu => `
+          <li class="flex justify-between items-center border-b py-2">
+            <span>${stu.name}</span>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 ${stu.status === 'present' ? 'bg-green-500' : 'bg-red-500'} rounded-full"></span>
+              <button data-stu-id="${stu.id}" class="bg-blue-500 text-white px-2 py-1 rounded">View</button>
+            </div>
+          </li>
+        `).join('')
+      }
+    } else {
+      formMasterSection.classList.add('hidden')
+    }
+
+    // Subjects list
+    subjectsGrid.innerHTML = subjects.map(sub => `
+      <button class="bg-white shadow p-4 rounded text-center" data-subject-id="${sub.id}">
+        ${sub.name}, ${sub.classes.name}
+      </button>
+    `).join('')
+  }
+
+  loadDashboard()
+</script>
+
+</body>
+</html>
