@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ilimi International — Management Dashboard</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <style>
+    :root {
+      --navy: #001F3F;
+      --yellow: #FFD700;
+      --bg: #f4f6f8;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, Roboto, Arial, sans-serif;
+      background:var(--bg);
+      color: #0b2140;
+    }
+    header{
+      position:sticky; top:0;
+      background:var(--navy); color:var(--yellow);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 18px; z-index:100;
+    }
+    .school { font-weight:700; font-size:1.05rem; }
+    .header-actions { display:flex; gap:12px; align-items:center; }
+    .logout-btn { background:var(--yellow); color:var(--navy); border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:700; }
+    .notif { position:relative; cursor:pointer; font-size:1.05rem; }
+    .notif-list {
+      display:none;
+      position:absolute; right:0; top:36px;
+      background:#fff; color:#000; min-width:320px; max-width:420px;
+      border-radius:6px; border:1px solid #e4e6ea; box-shadow:0 6px 18px rgba(5,10,20,0.12);
+      overflow:auto; max-height:300px; z-index:200;
+    }
+    .notif-item { padding:10px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; gap:8px; }
+    .notif-item:last-child{border-bottom:none}
+    .container{max-width:1100px;margin:18px auto;padding:0 14px;}
+    .stats { display:flex; gap:12px; justify-content:space-between; margin-bottom:14px; }
+    .stat-card { background:#fff;padding:12px 14px;border-radius:8px;flex:1; box-shadow:0 2px 8px rgba(8,15,30,0.05); text-align:center; }
+    .stat-card h3{margin:0;font-size:13px;color:#475569}
+    .stat-card p{margin:8px 0 0;font-size:18px;font-weight:700}
+    .accordion { margin-bottom:12px; border-radius:8px; overflow:hidden; box-shadow:0 2px 10px rgba(8,15,30,0.04); background:#fff; }
+    .accordion-header { background:var(--navy); color:var(--yellow); padding:12px 16px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; }
+    .accordion-body { display:none; padding:14px; background:#fff; }
+    .bulk-row { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+    .bulk-row input[type="text"]{flex:1; padding:8px;border:1px solid #d8dde6;border-radius:6px;}
+    .btn { background:var(--navy); color:var(--yellow); border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-weight:700; }
+    .list { max-height:260px; overflow:auto; border:1px dashed #e6edf3; padding:8px; border-radius:6px; background:#fbfcfd;}
+    .list-item { display:flex; justify-content:space-between; gap:8px; padding:6px 4px; border-bottom:1px solid #eef3f7; align-items:center; }
+    .list-item:last-child{border-bottom:none}
+    .small { font-size:13px; color:#475569; }
+    .muted { color:#6b7280; font-size:13px; }
+    .assign-row { display:flex; gap:8px; align-items:center; margin-top:8px; }
+    select.searchable { padding:8px; border-radius:6px; border:1px solid #d8dde6; min-width:220px; }
+    .icon-btn { background:transparent;border:none;color:var(--navy); cursor:pointer; padding:6px; border-radius:6px; }
+    @media (max-width:720px){
+      .stats{flex-direction:column; align-items:stretch}
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="school">Ilimi International Group of Schools, Gombe</div>
+
+    <div class="header-actions">
+      <div class="notif" id="notifBell" title="Notifications" aria-hidden="true">
+        <i class="fas fa-bell"></i>
+        <div class="notif-list" id="notifList"></div>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div>
+        <h2 style="margin:0 0 6px 0">Welcome, <span id="managerName">Manager</span></h2>
+        <div class="muted">Management Dashboard</div>
+      </div>
+      <div class="muted small">Project connected to Supabase</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <h3>Students</h3>
+        <p id="studentCount">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Teachers</h3>
+        <p id="teacherCount">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Incomplete Score Sheets</h3>
+        <p id="incompleteCount">0</p>
+      </div>
+    </div>
+
+    <!-- Teachers -->
+    <div class="accordion" id="accTeachers">
+      <div class="accordion-header">
+        <div>👨‍🏫 Teachers</div>
+        <div><i class="fas fa-chevron-down"></i></div>
+      </div>
+      <div class="accordion-body">
+        <div class="bulk-row">
+          <input id="teacherInput" type="text" placeholder="Add teachers (comma-separated): Mr Musa, Mrs Amina" />
+          <button class="btn" id="addTeachersBtn">Add</button>
+        </div>
+        <div class="list" id="teacherList"></div>
+      </div>
+    </div>
+
+    <!-- Classes -->
+    <div class="accordion" id="accClasses">
+      <div class="accordion-header">
+        <div>🏫 Classes</div>
+        <div><i class="fas fa-chevron-down"></i></div>
+      </div>
+      <div class="accordion-body">
+        <div class="bulk-row">
+          <input id="classInput" type="text" placeholder="Add classes (comma-separated): SS1A, SS2B" />
+          <select id="formMasterSelect" class="searchable"><option value="">Assign form master (optional)</option></select>
+          <button class="btn" id="addClassesBtn">Add</button>
+        </div>
+        <div class="list" id="classList"></div>
+      </div>
+    </div>
+
+    <!-- Subjects -->
+    <div class="accordion" id="accSubjects">
+      <div class="accordion-header">
+        <div>📘 Subjects</div>
+        <div><i class="fas fa-chevron-down"></i></div>
+      </div>
+      <div class="accordion-body">
+        <div class="bulk-row">
+          <select id="subjectClassSelect" class="searchable"><option value="">Select class</option></select>
+          <input id="subjectInput" type="text" placeholder="Add subjects (comma-separated): Mathematics, English" />
+          <select id="subjectTeacherSelect" class="searchable"><option value="">Assign teacher (optional)</option></select>
+          <button class="btn" id="addSubjectsBtn">Add</button>
+        </div>
+        <div id="subjectList" class="list"></div>
+      </div>
+    </div>
+
+    <!-- Students -->
+    <div class="accordion" id="accStudents">
+      <div class="accordion-header">
+        <div>👨‍🎓 Students</div>
+        <div><i class="fas fa-chevron-down"></i></div>
+      </div>
+      <div class="accordion-body">
+        <div class="bulk-row">
+          <select id="studentClassSelect" class="searchable"><option value="">Select class</option></select>
+          <input id="studentInput" type="text" placeholder="Add students (comma-separated): Aliyu Musa, Aisha Bala" />
+          <button class="btn" id="addStudentsBtn">Add</button>
+        </div>
+        <div id="studentList" class="list"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Load module JS -->
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
