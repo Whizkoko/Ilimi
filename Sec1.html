@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Section 1 - Demographics & Nordic</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+    label { display: block; margin-top: 10px; }
+    select, input { padding: 6px; margin-top: 4px; width: 100%; }
+    fieldset { margin-top: 15px; padding: 10px; border: 1px solid #ccc; }
+    legend { font-weight: bold; }
+    button { margin-top: 15px; padding: 10px 15px; }
+    .hidden { display: none; }
+    #status { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Section 1: Demographics & Nordic Questionnaire</h2>
+
+  <label>Respondent ID (1–400)</label>
+  <input type="number" id="respondent_id" min="1" max="400">
+  <button onclick="loadData()">Load Record</button>
+
+  <form id="section1Form" class="hidden" onsubmit="saveData(event)">
+    <!-- Demographics -->
+    <fieldset>
+      <legend>Appendix C - Demographics</legend>
+      <label>Age <input type="number" id="age"></label>
+      <label>Gender
+        <select id="gender">
+          <option value="">Select</option>
+          <option>Male</option>
+          <option>Female</option>
+        </select>
+      </label>
+      <label>Marital Status
+        <select id="marital_status">
+          <option value="">Select</option>
+          <option>Single</option>
+          <option>Married</option>
+          <option>Divorced</option>
+          <option>Widow/widower</option>
+        </select>
+      </label>
+      <label>Education
+        <select id="education">
+          <option value="">Select</option>
+          <option>No education</option>
+          <option>Islamic education</option>
+          <option>Primary education</option>
+          <option>Secondary education</option>
+          <option>Tertiary education</option>
+        </select>
+      </label>
+      <label>Ward <input type="text" id="ward"></label>
+      <label>Occupation
+        <select id="occupation">
+          <option value="">Select</option>
+          <option>Blue collar</option>
+          <option>White collar</option>
+        </select>
+      </label>
+      <label>Bodily Pain?
+        <select id="bodily_pain">
+          <option value="">Select</option>
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </label>
+      <label>Hospital Admission <input type="text" id="hospital_admission"></label>
+    </fieldset>
+
+    <!-- Nordic Questionnaire -->
+    <fieldset>
+      <legend>Appendix D - Nordic Musculoskeletal Questionnaire</legend>
+
+      <h4>In the last 12 months, have you had troubles in:</h4>
+      <div id="trouble"></div>
+
+      <h4>In the last 12 months, prevented from normal activities due to:</h4>
+      <div id="prevent"></div>
+
+      <h4>In the last 12 months, seen a physician for:</h4>
+      <div id="physician"></div>
+
+      <h4>In the last 7 days, had trouble in:</h4>
+      <div id="last7"></div>
+    </fieldset>
+
+    <button type="submit">Save</button>
+  </form>
+
+  <p id="status"></p>
+
+  <script type="module">
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://tnfbnknzzegvsqhjdfdy.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuZmJua256emVndnNxaGpkZmR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2OTAzMzcsImV4cCI6MjA3MDI2NjMzN30.p4wn70exYaVNpZQeL4wWyHH4EsgBUHrYTh428a3EgrQ";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const parts = [
+      "neck","shoulder","upper_back","elbows","wrists_hands","lower_back","hips_thighs","knees","ankles_feet"
+    ];
+
+    function renderSection(containerId, prefix) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      parts.forEach(p => {
+        const id = `nordic_${prefix}_${p}`;
+        container.innerHTML += `
+          <label style="margin-top:5px;">${p.replace("_"," ").toUpperCase()}
+            <select id="${id}">
+              <option value="">Select</option>
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </label>`;
+      });
+    }
+
+    ["trouble","prevent","physician","last7"].forEach(sec => {
+      renderSection(sec, sec === "last7" ? "7d" : sec);
+    });
+
+    async function loadData() {
+      const id = parseInt(document.getElementById("respondent_id").value);
+      if (!id || id < 1 || id > 400) {
+        alert("Enter a valid ID (1–400)");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("questionnaire_responses")
+        .select("*")
+        .eq("respondent_id", id)
+        .maybeSingle();
+
+      if (error) {
+        document.getElementById("status").innerText = "Error loading: " + error.message;
+        return;
+      }
+
+      document.getElementById("section1Form").classList.remove("hidden");
+
+      if (data) {
+        document.getElementById("age").value = data.age || "";
+        document.getElementById("gender").value = data.gender || "";
+        document.getElementById("marital_status").value = data.marital_status || "";
+        document.getElementById("education").value = data.education || "";
+        document.getElementById("ward").value = data.ward || "";
+        document.getElementById("occupation").value = data.occupation || "";
+        document.getElementById("bodily_pain").value = data.bodily_pain === true ? "true" : (data.bodily_pain === false ? "false" : "");
+        document.getElementById("hospital_admission").value = data.hospital_admission || "";
+
+        // Load nordic answers
+        ["trouble","prevent","physician","7d"].forEach(prefix => {
+          parts.forEach(p => {
+            const id = `nordic_${prefix}_${p}`;
+            if (data[id] === true) document.getElementById(id).value = "true";
+            else if (data[id] === false) document.getElementById(id).value = "false";
+            else document.getElementById(id).value = "";
+          });
+        });
+      }
+
+      document.getElementById("status").innerText = "Editing ID " + id;
+    }
+
+    async function saveData(event) {
+      event.preventDefault();
+      const id = parseInt(document.getElementById("respondent_id").value);
+      if (!id) return;
+
+      const record = {
+        respondent_id: id,
+        age: parseInt(document.getElementById("age").value) || null,
+        gender: document.getElementById("gender").value || null,
+        marital_status: document.getElementById("marital_status").value || null,
+        education: document.getElementById("education").value || null,
+        ward: document.getElementById("ward").value || null,
+        occupation: document.getElementById("occupation").value || null,
+        bodily_pain: document.getElementById("bodily_pain").value === "true" ? true : 
+                      (document.getElementById("bodily_pain").value === "false" ? false : null),
+        hospital_admission: document.getElementById("hospital_admission").value || null,
+      };
+
+      ["trouble","prevent","physician","7d"].forEach(prefix => {
+        parts.forEach(p => {
+          const idField = `nordic_${prefix}_${p}`;
+          const val = document.getElementById(idField).value;
+          record[idField] = val === "true" ? true : (val === "false" ? false : null);
+        });
+      });
+
+      const { error } = await supabase
+        .from("questionnaire_responses")
+        .upsert(record, { onConflict: "respondent_id" });
+
+      if (error) {
+        document.getElementById("status").innerText = "Save failed: " + error.message;
+      } else {
+        document.getElementById("status").innerText = "Saved successfully!";
+      }
+    }
+
+    window.loadData = loadData;
+    window.saveData = saveData;
+  </script>
+</body>
+</html>
